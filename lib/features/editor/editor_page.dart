@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/paragraph_separator_input_formatter.dart';
 import '../../shared/widgets/app_scaffold.dart';
 import 'editor_controller.dart';
@@ -27,14 +28,24 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   bool _autoNumber = false;
   final _numberFmtCtrl = TextEditingController(text: "1) ");
 
-  // ✅ NEW: Advanced intelligence / strophe settings
+  // Advanced intelligence / strophe settings
   RefactorMode _refactorMode = RefactorMode.soft;
   bool _smartSplit = true;
+
   OutputLayoutMode _layoutMode = OutputLayoutMode.stropheLines;
   final _linesPerStropheCtrl = TextEditingController(text: "4");
   final _charsPerLineCtrl = TextEditingController(text: "42");
+
   LongWordPolicy _longWordPolicy = LongWordPolicy.breakWithHyphen;
   bool _preserveHeaders = true;
+
+  // smart strophe breaks
+  bool _smartStrophes = true;
+
+  // Auto calculate charsPerLine based on real width
+  final GlobalKey _resultKey = GlobalKey();
+  bool _autoCharsPerLine = true;
+  double _lastMeasuredWidth = 0;
 
   @override
   void dispose() {
@@ -44,7 +55,6 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     _maxCharsCtrl.dispose();
     _separatorCtrl.dispose();
     _numberFmtCtrl.dispose();
-
     _linesPerStropheCtrl.dispose();
     _charsPerLineCtrl.dispose();
     super.dispose();
@@ -57,9 +67,57 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final st = ref.read(editorControllerProvider);
       _syncFromState(st);
+
+      WidgetsBinding.instance.addPostFrameCallback((__) {
+        _maybeAutoUpdateCharsPerLine(context);
+      });
     });
   }
 
+  // -----------------------------
+  // Auto chars-per-line measure
+  // -----------------------------
+  int _estimateCharsPerLine(BuildContext context, double maxWidth) {
+    final style =
+        Theme.of(context).textTheme.bodyMedium ?? const TextStyle(fontSize: 14);
+
+    const sample = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    final tp = TextPainter(
+      text: TextSpan(text: sample, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+
+    final avgCharWidth = tp.width / sample.length;
+    if (avgCharWidth <= 0) return 42;
+
+    final usable = (maxWidth - 32).clamp(120, 2000);
+    final chars = (usable / avgCharWidth).floor();
+    return chars.clamp(10, 200);
+  }
+
+  void _maybeAutoUpdateCharsPerLine(BuildContext context) {
+    if (!_autoCharsPerLine) return;
+
+    final render = _resultKey.currentContext?.findRenderObject();
+    if (render is! RenderBox) return;
+
+    final w = render.size.width;
+    if (w <= 0) return;
+
+    if ((w - _lastMeasuredWidth).abs() < 12) return;
+    _lastMeasuredWidth = w;
+
+    final est = _estimateCharsPerLine(context, w);
+    if (_charsPerLineCtrl.text.trim() != est.toString()) {
+      _charsPerLineCtrl.text = est.toString();
+      setState(() {});
+    }
+  }
+
+  // -----------------------------
+  // Cursor insert helper
+  // -----------------------------
   void _insertAtCursor(TextEditingController controller, String toInsert) {
     final value = controller.value;
     final text = value.text;
@@ -78,6 +136,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     );
   }
 
+  // -----------------------------
+  // Sync with state
+  // -----------------------------
   void _syncFromState(EditorState st) {
     _inputCtrl.text = st.input;
     _outputCtrl.text = st.output;
@@ -101,17 +162,19 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     _autoNumber = s.autoNumbering;
     _numberFmtCtrl.text = s.numberingFormat;
 
-    // display-friendly: allow user to type \n\n
     _separatorCtrl.text = _escapeSeparator(s.separator);
 
-    // ✅ NEW: advanced settings sync
     _refactorMode = s.mode;
     _smartSplit = s.smartSplitLongSentences;
+
     _layoutMode = s.layoutMode;
     _linesPerStropheCtrl.text = s.linesPerStrophe.toString();
     _charsPerLineCtrl.text = s.charsPerLine.toString();
+
     _longWordPolicy = s.longWordPolicy;
     _preserveHeaders = s.preserveHeaderLines;
+
+    _smartStrophes = s.smartStropheBreaks;
 
     setState(() {});
   }
@@ -119,6 +182,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   String _escapeSeparator(String sep) => sep.replaceAll("\n", r"\n");
   String _unescapeSeparator(String sep) => sep.replaceAll(r"\n", "\n");
 
+  // -----------------------------
+  // Build settings
+  // -----------------------------
   RefactorSettings _buildSettingsFromUI() {
     int? maxWords;
     int? maxChars;
@@ -131,8 +197,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
     final separator = _unescapeSeparator(_separatorCtrl.text);
 
-    final linesPerStrophe =
-        int.tryParse(_linesPerStropheCtrl.text.trim()) ?? 4;
+    final linesPerStrophe = int.tryParse(_linesPerStropheCtrl.text.trim()) ?? 4;
     final charsPerLine = int.tryParse(_charsPerLineCtrl.text.trim()) ?? 42;
 
     return RefactorSettings(
@@ -142,25 +207,28 @@ class _EditorPageState extends ConsumerState<EditorPage> {
       ensureEndPunctuation: _ensurePunct,
       autoNumbering: _autoNumber,
       numberingFormat: _numberFmtCtrl.text.isEmpty ? "1) " : _numberFmtCtrl.text,
-
-      // ✅ NEW
       mode: _refactorMode,
       smartSplitLongSentences: _smartSplit,
       keepSeparatorPunctuation: true,
-
-      // ✅ NEW: strophes / line wrapping
       layoutMode: _layoutMode,
       linesPerStrophe: linesPerStrophe.clamp(1, 20),
       charsPerLine: charsPerLine.clamp(10, 200),
       longWordPolicy: _longWordPolicy,
       preserveHeaderLines: _preserveHeaders,
+      smartStropheBreaks: _smartStrophes,
     );
   }
 
   Future<void> _runProcess() async {
     ref.read(editorControllerProvider.notifier).setInput(_inputCtrl.text);
-    ref.read(editorControllerProvider.notifier).setSettings(_buildSettingsFromUI());
+    ref
+        .read(editorControllerProvider.notifier)
+        .setSettings(_buildSettingsFromUI());
     await ref.read(editorControllerProvider.notifier).process();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeAutoUpdateCharsPerLine(context);
+    });
   }
 
   void _insertSeparator() {
@@ -169,29 +237,39 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   }
 
   void _applyPresetBranham() {
-    // ✅ One-click preset for your sample formatting
     setState(() {
       _layoutMode = OutputLayoutMode.stropheLines;
       _linesPerStropheCtrl.text = "4";
-      _charsPerLineCtrl.text = "28"; // good for "citation" look
+
+      _autoCharsPerLine = true;
+      _charsPerLineCtrl.text = "28";
+
       _refactorMode = RefactorMode.soft;
       _smartSplit = true;
+
       _ensurePunct = true;
       _autoNumber = false;
+
       _preserveHeaders = true;
+      _smartStrophes = true;
+
       _separatorCtrl.text = r"\n\n";
 
-      // Recommended chunking (optional): 90 words gives nice paragraphs
       _mode = LimitMode.words;
       _maxWordsCtrl.text = "90";
       _maxCharsCtrl.clear();
 
       _longWordPolicy = LongWordPolicy.breakWithHyphen;
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeAutoUpdateCharsPerLine(context);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ✅ non-null
     final state = ref.watch(editorControllerProvider);
 
     ref.listen(editorControllerProvider, (prev, next) {
@@ -204,16 +282,17 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     });
 
     return AppScaffold(
-      title: "Éditeur",
+      title: l10n.editorTitle,
       current: AppNav.editor,
       child: Shortcuts(
         shortcuts: <ShortcutActivator, Intent>{
           const SingleActivator(LogicalKeyboardKey.enter, control: true):
           const _ProcessIntent(),
-          const SingleActivator(LogicalKeyboardKey.enter, control: true, shift: true):
+          const SingleActivator(LogicalKeyboardKey.enter,
+              control: true, shift: true):
           const _InsertSepIntent(),
-          // ✅ NEW: Ctrl+Alt+B => Apply preset
-          const SingleActivator(LogicalKeyboardKey.keyB, control: true, alt: true):
+          const SingleActivator(LogicalKeyboardKey.keyB,
+              control: true, alt: true):
           const _PresetBranhamIntent(),
         },
         child: Actions(
@@ -226,7 +305,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               _insertSeparator();
               return null;
             }),
-            _PresetBranhamIntent: CallbackAction<_PresetBranhamIntent>(onInvoke: (_) {
+            _PresetBranhamIntent:
+            CallbackAction<_PresetBranhamIntent>(onInvoke: (_) {
               _applyPresetBranham();
               return null;
             }),
@@ -235,24 +315,28 @@ class _EditorPageState extends ConsumerState<EditorPage> {
             autofocus: true,
             child: LayoutBuilder(
               builder: (context, c) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _maybeAutoUpdateCharsPerLine(context);
+                });
+
                 final isWide = c.maxWidth >= 980;
                 return isWide
                     ? Row(
                   children: [
                     SizedBox(
-                      width: 380,
-                      child: _SettingsPanel(state: state),
+                      width: 400,
+                      child: _SettingsPanel(state: state, l10n: l10n),
                     ),
                     const VerticalDivider(width: 1),
-                    Expanded(child: _EditorPanel(state: state)),
+                    Expanded(child: _EditorPanel(state: state, l10n: l10n)),
                   ],
                 )
                     : ListView(
                   padding: const EdgeInsets.all(12),
                   children: [
-                    _SettingsPanel(state: state),
+                    _SettingsPanel(state: state, l10n: l10n),
                     const SizedBox(height: 12),
-                    _EditorPanel(state: state),
+                    _EditorPanel(state: state, l10n: l10n),
                   ],
                 );
               },
@@ -263,75 +347,76 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     );
   }
 
-  Widget _SettingsPanel({required EditorState state}) {
+  Widget _SettingsPanel({required EditorState state, required AppLocalizations l10n}) {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
         Row(
           children: [
             Expanded(
-              child: Text("Paramètres", style: Theme.of(context).textTheme.titleLarge),
+              child: Text(
+                l10n.settingsTitle,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             FilledButton.tonalIcon(
               onPressed: _applyPresetBranham,
               icon: const Icon(Icons.auto_awesome),
-              label: const Text("Preset Citation"),
+              label: Text(l10n.presetCitation),
             ),
           ],
         ),
         const SizedBox(height: 12),
 
-        // --------- Chunk Limits (words/chars/none)
+        // Chunk Limits
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Limite de découpage (paragraphes)"),
+                Text(l10n.chunkLimitTitle),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<LimitMode>(
                   value: _mode,
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: LimitMode.none,
-                      child: Text("Aucune (respecter les paragraphes)"),
+                      child: Text(l10n.limitNone),
                     ),
                     DropdownMenuItem(
                       value: LimitMode.words,
-                      child: Text("Nombre de mots"),
+                      child: Text(l10n.limitWords),
                     ),
                     DropdownMenuItem(
                       value: LimitMode.chars,
-                      child: Text("Nombre de caractères"),
+                      child: Text(l10n.limitChars),
                     ),
                   ],
-                  onChanged: (v) {
-                    setState(() => _mode = v ?? LimitMode.none);
-                  },
+                  onChanged: (v) => setState(() => _mode = v ?? LimitMode.none),
                 ),
                 const SizedBox(height: 10),
                 if (_mode == LimitMode.words)
                   TextFormField(
                     controller: _maxWordsCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Max mots par paragraphe (ex: 90)",
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.maxWordsLabel,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 if (_mode == LimitMode.chars)
                   TextFormField(
                     controller: _maxCharsCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Max caractères par paragraphe (ex: 650)",
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.maxCharsLabel,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 const SizedBox(height: 8),
                 Text(
-                  "Astuce: si un texte a des phrases très longues, active le mode intelligent ci-dessous.",
+                  l10n.chunkTip,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -341,36 +426,36 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
         const SizedBox(height: 12),
 
-        // --------- Refactor intelligence
+        // Refactor intelligence
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Refactorisation intelligente"),
+                Text(l10n.smartRefactorTitle),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<RefactorMode>(
                   value: _refactorMode,
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: RefactorMode.soft,
-                      child: Text("Doux (style naturel)"),
+                      child: Text(l10n.modeSoft),
                     ),
                     DropdownMenuItem(
                       value: RefactorMode.strict,
-                      child: Text("Strict (plus structuré)"),
+                      child: Text(l10n.modeStrict),
                     ),
                     DropdownMenuItem(
                       value: RefactorMode.aggressive,
-                      child: Text("Agressif (coupe davantage)"),
+                      child: Text(l10n.modeAggressive),
                     ),
                   ],
                   onChanged: (v) =>
                       setState(() => _refactorMode = v ?? RefactorMode.soft),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: "Mode",
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: l10n.modeLabel,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -378,8 +463,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   contentPadding: EdgeInsets.zero,
                   value: _smartSplit,
                   onChanged: (v) => setState(() => _smartSplit = v),
-                  title: const Text("Découper les pensées longues intelligemment"),
-                  subtitle: const Text("Phrase → ; : , → mots (fallback)"),
+                  title: Text(l10n.smartSplitTitle),
+                  subtitle: Text(l10n.smartSplitSubtitle),
                 ),
               ],
             ),
@@ -388,20 +473,20 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
         const SizedBox(height: 12),
 
-        // --------- Separator / punctuation
+        // Separator / punctuation
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Séparateur de paragraphe / strophe"),
+                Text(l10n.separatorTitle),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _separatorCtrl,
-                  decoration: const InputDecoration(
-                    hintText: r"Ex: \n\n ou ----",
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    hintText: l10n.separatorHint,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -409,7 +494,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   contentPadding: EdgeInsets.zero,
                   value: _ensurePunct,
                   onChanged: (v) => setState(() => _ensurePunct = v),
-                  title: const Text("Assurer ponctuation en fin de bloc"),
+                  title: Text(l10n.ensurePunctTitle),
                 ),
               ],
             ),
@@ -418,44 +503,58 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
         const SizedBox(height: 12),
 
-        // --------- Output Layout: strophes/lines
+        // Output layout
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Strophes & lignes (comme ton exemple)"),
+                Text(l10n.strophesTitle),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<OutputLayoutMode>(
                   value: _layoutMode,
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: OutputLayoutMode.paragraph,
-                      child: Text("Paragraphes classiques"),
+                      child: Text(l10n.formatParagraph),
                     ),
                     DropdownMenuItem(
                       value: OutputLayoutMode.stropheLines,
-                      child: Text("Strophes (lignes)"),
+                      child: Text(l10n.formatStropheLines),
                     ),
                   ],
-                  onChanged: (v) => setState(() =>
-                  _layoutMode = v ?? OutputLayoutMode.stropheLines),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: "Format final",
+                  onChanged: (v) => setState(
+                          () => _layoutMode = v ?? OutputLayoutMode.stropheLines),
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: l10n.outputFormatLabel,
                   ),
                 ),
                 const SizedBox(height: 10),
+
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _autoCharsPerLine,
+                  onChanged: (v) {
+                    setState(() => _autoCharsPerLine = v);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _maybeAutoUpdateCharsPerLine(context);
+                    });
+                  },
+                  title: Text(l10n.autoLineWidthTitle),
+                  subtitle: Text(l10n.autoLineWidthSubtitle),
+                ),
+
                 Row(
                   children: [
                     Expanded(
                       child: TextFormField(
                         controller: _linesPerStropheCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: "Lignes / strophe (ex: 4)",
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.linesPerStropheLabel,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
@@ -463,45 +562,56 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                     Expanded(
                       child: TextFormField(
                         controller: _charsPerLineCtrl,
+                        enabled: !_autoCharsPerLine,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: "Largeur ligne (chars) (ex: 28)",
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.charsPerLineLabel,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
+
                 DropdownButtonFormField<LongWordPolicy>(
                   value: _longWordPolicy,
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: LongWordPolicy.breakWithHyphen,
-                      child: Text("Mot long: découper avec '-'"),
+                      child: Text(l10n.longWordHyphen),
                     ),
                     DropdownMenuItem(
                       value: LongWordPolicy.hardBreak,
-                      child: Text("Mot long: découper sans '-'"),
+                      child: Text(l10n.longWordHard),
                     ),
                     DropdownMenuItem(
                       value: LongWordPolicy.overflow,
-                      child: Text("Mot long: ne pas couper (overflow)"),
+                      child: Text(l10n.longWordOverflow),
                     ),
                   ],
                   onChanged: (v) => setState(() =>
                   _longWordPolicy = v ?? LongWordPolicy.breakWithHyphen),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: "Mots très longs",
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: l10n.longWordsLabel,
                   ),
                 ),
                 const SizedBox(height: 10),
+
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _preserveHeaders,
                   onChanged: (v) => setState(() => _preserveHeaders = v),
-                  title: const Text("Préserver les titres (*...*, §..., dates…)"),
+                  title: Text(l10n.preserveHeadersTitle),
+                ),
+
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _smartStrophes,
+                  onChanged: (v) => setState(() => _smartStrophes = v),
+                  title: Text(l10n.smartStrophesTitle),
+                  subtitle: Text(l10n.smartStrophesSubtitle),
                 ),
               ],
             ),
@@ -510,7 +620,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
         const SizedBox(height: 12),
 
-        // --------- Numbering
+        // Numbering
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -521,15 +631,15 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   contentPadding: EdgeInsets.zero,
                   value: _autoNumber,
                   onChanged: (v) => setState(() => _autoNumber = v),
-                  title: const Text("Numérotation automatique"),
+                  title: Text(l10n.numberingTitle),
                 ),
                 const SizedBox(height: 8),
                 if (_autoNumber)
                   TextFormField(
                     controller: _numberFmtCtrl,
-                    decoration: const InputDecoration(
-                      labelText: "Format (ex: 1)  |  1.  |  [1] )",
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.numberingFormatLabel,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
               ],
@@ -539,7 +649,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
         const SizedBox(height: 12),
 
-        // --------- Shortcuts / reset
+        // Shortcuts / reset
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -547,10 +657,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Raccourcis :\n"
-                      "• Ctrl + Entrée : Refactoriser\n"
-                      "• Ctrl + Shift + Entrée : Insérer séparateur\n"
-                      "• Ctrl + Alt + B : Preset Citation",
+                  "${l10n.shortcutsTitle}\n"
+                      "${l10n.shortcutProcess}\n"
+                      "${l10n.shortcutInsertSep}\n"
+                      "${l10n.shortcutPreset}",
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),
@@ -560,7 +670,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                     _syncFromState(ref.read(editorControllerProvider));
                   },
                   icon: const Icon(Icons.delete_outline),
-                  label: const Text("Réinitialiser"),
+                  label: Text(l10n.reset),
                 ),
               ],
             ),
@@ -570,12 +680,15 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     );
   }
 
-  Widget _EditorPanel({required EditorState state}) {
+  Widget _EditorPanel({required EditorState state, required AppLocalizations l10n}) {
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          Row(
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FilledButton.icon(
                 onPressed: state.isProcessing ? null : _runProcess,
@@ -586,15 +699,13 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
                     : const Icon(Icons.auto_fix_high),
-                label: Text(state.isProcessing ? "Traitement..." : "Refactoriser"),
+                label: Text(state.isProcessing ? l10n.processing : l10n.refactor),
               ),
-              const SizedBox(width: 10),
               OutlinedButton.icon(
                 onPressed: _insertSeparator,
                 icon: const Icon(Icons.vertical_split),
-                label: const Text("Insérer séparateur"),
+                label: Text(l10n.insertSeparator),
               ),
-              const SizedBox(width: 10),
               OutlinedButton.icon(
                 onPressed: () async {
                   final text = _outputCtrl.text.trim();
@@ -602,16 +713,22 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   await Clipboard.setData(ClipboardData(text: text));
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Texte copié !")),
+                    SnackBar(content: Text(l10n.copied)),
                   );
                 },
                 icon: const Icon(Icons.copy),
-                label: const Text("Copier résultat"),
+                label: Text(l10n.copyResult),
               ),
-              const Spacer(),
-              Text(
-                "Entrée: ${_inputCtrl.text.length} chars  •  Sortie: ${_outputCtrl.text.length} chars",
-                style: Theme.of(context).textTheme.bodySmall,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Text(
+                  l10n.stats(
+                    _inputCtrl.text.length.toString(),
+                    _outputCtrl.text.length.toString(),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ],
           ),
@@ -631,7 +748,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               children: [
                 Expanded(
                   child: _TextCard(
-                    title: "Texte brut",
+                    title: l10n.rawTextTitle,
                     child: TextField(
                       controller: _inputCtrl,
                       maxLines: null,
@@ -642,26 +759,28 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                           separator: _unescapeSeparator(_separatorCtrl.text),
                         ),
                       ],
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText:
-                        "Colle ton texte ici… (double Entrée = séparateur)",
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: l10n.rawHint,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _TextCard(
-                    title: "Texte généré",
-                    child: TextField(
-                      controller: _outputCtrl,
-                      maxLines: null,
-                      expands: true,
-                      textAlignVertical: TextAlignVertical.top,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText: "Le résultat apparaîtra ici… (modifiable)",
+                  child: Container(
+                    key: _resultKey,
+                    child: _TextCard(
+                      title: l10n.generatedTextTitle,
+                      child: TextField(
+                        controller: _outputCtrl,
+                        maxLines: null,
+                        expands: true,
+                        textAlignVertical: TextAlignVertical.top,
+                        decoration: InputDecoration(
+                          border: const OutlineInputBorder(),
+                          hintText: l10n.generatedHint,
+                        ),
                       ),
                     ),
                   ),

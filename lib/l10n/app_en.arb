@@ -1,0 +1,111 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "ProjectionCitations",
+
+  "welcomeTitle": "Welcome",
+  "welcomeSubtitle": "Offline application for intelligent text refactoring and formatting.",
+  "welcomeBullets": "• Paste a raw text\n• Configure the splitting (words / characters)\n• Generate a clean and structured text\n• Copy without mandatory saving\n",
+  "start": "Get started",
+
+  "language": "Language",
+  "systemLanguage": "System language",
+  "french": "French",
+  "english": "English",
+  "portuguese": "Portuguese",
+
+  "helpTitle": "Help",
+  "helpHeader": "Help & Guide",
+  "helpBody": "1) Paste your raw text into the 'Raw text' area.\n2) Configure the settings (words, characters, separator, punctuation, numbering).\n3) Click on 'Refactor' (or Ctrl + Enter).\n4) You can edit the generated text.\n5) Click on 'Copy result' to copy.\n\nTips:\n- To keep existing paragraphs: set the limit to 'None'.\n- To create balanced paragraphs: use 'Word count' (e.g. 60–120).\n- The separator accepts \\n for line breaks (e.g. \\n\\n).",
+  "helpNumberingExamplesTitle": "Numbering format examples",
+  "helpNumberingExamples": "- 1) \n- 1. \n- [1] \n",
+
+  "historyTitle": "History",
+  "historyEmpty": "No history yet.",
+  "deleteAll": "Delete all",
+  "historyCleared": "History cleared",
+  "entryDeleted": "Entry deleted",
+  "undo": "UNDO",
+  "delete": "Delete",
+
+  "historyItemSubtitle": "On {date} • {count} chars",
+  "@historyItemSubtitle": {
+    "placeholders": {
+      "date": {},
+      "count": {}
+    }
+  },
+
+  "editorTitle": "Editor",
+  "settingsTitle": "Settings",
+  "presetCitation": "Citation Preset",
+
+  "chunkLimitTitle": "Split limit (paragraphs)",
+  "limitNone": "None (keep existing paragraphs)",
+  "limitWords": "Word count",
+  "limitChars": "Character count",
+
+  "maxWordsLabel": "Max words per paragraph (e.g. 90)",
+  "maxCharsLabel": "Max characters per paragraph (e.g. 650)",
+  "chunkTip": "Tip: enable smart mode if sentences are very long.",
+
+  "smartRefactorTitle": "Smart refactoring",
+  "modeLabel": "Mode",
+  "modeSoft": "Soft (natural style)",
+  "modeStrict": "Strict (more structured)",
+  "modeAggressive": "Aggressive (splits more)",
+  "smartSplitTitle": "Smartly split long thoughts",
+  "smartSplitSubtitle": "Sentence → ; : , → words (fallback)",
+
+  "separatorTitle": "Paragraph / strophe separator",
+  "separatorHint": "e.g. \\n\\n or ----",
+  "ensurePunctTitle": "Ensure punctuation at the end of each block",
+
+  "strophesTitle": "Strophes & lines (like your example)",
+  "outputFormatLabel": "Final format",
+  "formatParagraph": "Classic paragraphs",
+  "formatStropheLines": "Strophes (lines)",
+
+  "autoLineWidthTitle": "Auto: line width based on window",
+  "autoLineWidthSubtitle": "Measures the result area and adjusts chars/line",
+
+  "linesPerStropheLabel": "Lines per strophe (e.g. 4)",
+  "charsPerLineLabel": "Line width (chars)",
+
+  "longWordsLabel": "Very long words",
+  "longWordHyphen": "Long word: split with '-'",
+  "longWordHard": "Long word: split without '-'",
+  "longWordOverflow": "Long word: do not split (overflow)",
+
+  "preserveHeadersTitle": "Preserve headers (*...*, §..., dates…)",
+  "smartStrophesTitle": "Smart strophes (end of sentence)",
+  "smartStrophesSubtitle": "Prefer ending a strophe on a complete sentence when possible",
+
+  "numberingTitle": "Automatic numbering",
+  "numberingFormatLabel": "Format (e.g. 1)  |  1.  |  [1] )",
+
+  "shortcutsTitle": "Shortcuts:",
+  "shortcutProcess": "• Ctrl + Enter: Refactor",
+  "shortcutInsertSep": "• Ctrl + Shift + Enter: Insert separator",
+  "shortcutPreset": "• Ctrl + Alt + B: Citation Preset",
+  "reset": "Reset",
+
+  "processing": "Processing...",
+  "refactor": "Refactor",
+  "insertSeparator": "Insert separator",
+  "copyResult": "Copy result",
+  "copied": "Text copied!",
+
+  "rawTextTitle": "Raw text",
+  "generatedTextTitle": "Generated text",
+  "rawHint": "Paste your text here… (double Enter = separator)",
+  "generatedHint": "Result will appear here… (editable)",
+
+  "stats": "Input: {inChars} chars  •  Output: {outChars} chars",
+  "@stats": {
+    "placeholders": {
+      "inChars": {},
+      "outChars": {}
+    }
+  }
+}

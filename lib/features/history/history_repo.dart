@@ -1,9 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
-
 import '../../core/constants/app_constants.dart';
 import '../editor/models.dart';
-
 part 'history_repo.g.dart';
+
+final historyRepositoryProvider = Provider<HistoryRepo>((ref) => HistoryRepo());
 
 @HiveType(typeId: 1)
 class HistoryEntry extends HiveObject {
@@ -37,10 +38,11 @@ class HistoryRepo {
     await Hive.openBox<HistoryEntry>(AppConstants.historyBoxName);
   }
 
-  Box<HistoryEntry> get _box => Hive.box<HistoryEntry>(AppConstants.historyBoxName);
+  Box<HistoryEntry> get box =>
+      Hive.box<HistoryEntry>(AppConstants.historyBoxName);
 
-  List<HistoryEntry> getAll() {
-    final items = _box.values.toList();
+  List<HistoryEntry> getAllSorted() {
+    final items = box.values.toList();
     items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return items;
   }
@@ -56,10 +58,15 @@ class HistoryRepo {
       settingsJson: settings.toJson(),
       createdAt: DateTime.now(),
     );
-    await _box.add(entry);
+    await box.add(entry);
   }
 
   Future<void> deleteEntry(HistoryEntry e) => e.delete();
 
-  Future<void> clearAll() => _box.clear();
+  Future<void> clearAll() => box.clear();
+
+  /// ✅ pour UNDO
+  Future<void> restoreAtKey(dynamic key, HistoryEntry entry) async {
+    await box.put(key, entry);
+  }
 }

@@ -9,6 +9,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Hive.initFlutter();
+  await Hive.openBox('settings');
   await HistoryRepo.initHive();
 
   runApp(const ProviderScope(child: ProjectionCitationsApp()));

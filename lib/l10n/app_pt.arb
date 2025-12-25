@@ -1,0 +1,112 @@
+{
+  "@@locale": "pt",
+
+  "appTitle": "ProjectionCitations",
+
+  "welcomeTitle": "Bem-vindo",
+  "welcomeSubtitle": "Aplicação offline para refatoração e formatação inteligente de textos.",
+  "welcomeBullets": "• Cole um texto bruto\n• Configure o recorte (palavras / caracteres)\n• Gere um texto limpo e estruturado\n• Copie sem obrigação de salvar\n",
+  "start": "Começar",
+
+  "language": "Idioma",
+  "systemLanguage": "Idioma do sistema",
+  "french": "Francês",
+  "english": "Inglês",
+  "portuguese": "Português",
+
+  "helpTitle": "Ajuda",
+  "helpHeader": "Ajuda & Guia",
+  "helpBody": "1) Cole o texto bruto na área 'Texto bruto'.\n2) Configure os parâmetros (palavras, caracteres, separador, pontuação, numeração).\n3) Clique em 'Refatorar' (ou Ctrl + Enter).\n4) Você pode editar o texto gerado.\n5) Clique em 'Copiar resultado' para copiar.\n\nDicas:\n- Para manter os parágrafos existentes: selecione 'Nenhum' no limite.\n- Para criar parágrafos equilibrados: use 'Número de palavras' (ex: 60–120).\n- O separador aceita \\n para quebra de linha (ex: \\n\\n).",
+  "helpNumberingExamplesTitle": "Exemplos de formato de numeração",
+  "helpNumberingExamples": "- 1) \n- 1. \n- [1] \n",
+
+  "historyTitle": "Histórico",
+  "historyEmpty": "Nenhum histórico por enquanto.",
+  "deleteAll": "Apagar tudo",
+  "historyCleared": "Histórico apagado",
+  "entryDeleted": "Entrada apagada",
+  "undo": "DESFAZER",
+  "delete": "Apagar",
+
+  "historyItemSubtitle": "Em {date} • {count} caracteres",
+  "@historyItemSubtitle": {
+    "placeholders": {
+      "date": {},
+      "count": {}
+    }
+  },
+
+  "editorTitle": "Editor",
+  "settingsTitle": "Configurações",
+  "presetCitation": "Preset de Citação",
+
+  "chunkLimitTitle": "Limite de recorte (parágrafos)",
+  "limitNone": "Nenhum (manter parágrafos existentes)",
+  "limitWords": "Número de palavras",
+  "limitChars": "Número de caracteres",
+
+  "maxWordsLabel": "Máx. palavras por parágrafo (ex: 90)",
+  "maxCharsLabel": "Máx. caracteres por parágrafo (ex: 650)",
+  "chunkTip": "Dica: ative o modo inteligente se as frases forem muito longas.",
+
+  "smartRefactorTitle": "Refatoração inteligente",
+  "modeLabel": "Modo",
+  "modeSoft": "Suave (estilo natural)",
+  "modeStrict": "Rigoroso (mais estruturado)",
+  "modeAggressive": "Agressivo (recorta mais)",
+
+  "smartSplitTitle": "Recortar pensamentos longos de forma inteligente",
+  "smartSplitSubtitle": "Frase → ; : , → palavras (fallback)",
+
+  "separatorTitle": "Separador de parágrafo / estrofe",
+  "separatorHint": "Ex: \\n\\n ou ----",
+  "ensurePunctTitle": "Garantir pontuação no fim do bloco",
+
+  "strophesTitle": "Estrofes & linhas (como no seu exemplo)",
+  "outputFormatLabel": "Formato final",
+  "formatParagraph": "Parágrafos clássicos",
+  "formatStropheLines": "Estrofes (linhas)",
+
+  "autoLineWidthTitle": "Auto: largura da linha conforme a janela",
+  "autoLineWidthSubtitle": "Mede a área do resultado e ajusta chars/linha",
+
+  "linesPerStropheLabel": "Linhas por estrofe (ex: 4)",
+  "charsPerLineLabel": "Largura da linha (chars)",
+
+  "longWordsLabel": "Palavras muito longas",
+  "longWordHyphen": "Palavra longa: dividir com '-'",
+  "longWordHard": "Palavra longa: dividir sem '-'",
+  "longWordOverflow": "Palavra longa: não dividir (overflow)",
+
+  "preserveHeadersTitle": "Preservar títulos (*...*, §..., datas…)",
+  "smartStrophesTitle": "Estrofes inteligentes (fim da frase)",
+  "smartStrophesSubtitle": "Prefere fechar a estrofe numa frase completa quando possível",
+
+  "numberingTitle": "Numeração automática",
+  "numberingFormatLabel": "Formato (ex: 1)  |  1.  |  [1] )",
+
+  "shortcutsTitle": "Atalhos:",
+  "shortcutProcess": "• Ctrl + Enter: Refatorar",
+  "shortcutInsertSep": "• Ctrl + Shift + Enter: Inserir separador",
+  "shortcutPreset": "• Ctrl + Alt + B: Preset de Citação",
+  "reset": "Reiniciar",
+
+  "processing": "Processando...",
+  "refactor": "Refatorar",
+  "insertSeparator": "Inserir separador",
+  "copyResult": "Copiar resultado",
+  "copied": "Texto copiado!",
+
+  "rawTextTitle": "Texto bruto",
+  "generatedTextTitle": "Texto gerado",
+  "rawHint": "Cole seu texto aqui… (duplo Enter = separador)",
+  "generatedHint": "O resultado aparecerá aqui… (editável)",
+
+  "stats": "Entrada: {inChars} chars  •  Saída: {outChars} chars",
+  "@stats": {
+    "placeholders": {
+      "inChars": {},
+      "outChars": {}
+    }
+  }
+}

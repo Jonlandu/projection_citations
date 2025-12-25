@@ -1,0 +1,111 @@
+{
+  "@@locale": "fr",
+
+  "appTitle": "ProjectionCitations",
+
+  "welcomeTitle": "Bienvenue",
+  "welcomeSubtitle": "Application hors ligne de refactorisation et mise en forme intelligente de texte.",
+  "welcomeBullets": "• Colle un texte brut\n• Configure le découpage (mots / caractères)\n• Génère un texte propre et structuré\n• Copie sans obligation d’enregistrement\n",
+  "start": "Commencer",
+
+  "language": "Langue",
+  "systemLanguage": "Langue du système",
+  "french": "Français",
+  "english": "English",
+  "portuguese": "Português",
+
+  "helpTitle": "Aide",
+  "helpHeader": "Aide & Guide",
+  "helpBody": "1) Colle ton texte brut dans la zone 'Texte brut'.\n2) Configure les paramètres (mots, caractères, séparateur, ponctuation, numérotation).\n3) Clique sur 'Refactoriser' (ou Ctrl + Entrée).\n4) Tu peux modifier le texte généré.\n5) Clique sur 'Copier résultat' pour copier.\n\nConseils:\n- Si tu veux garder les paragraphes existants : mets 'Aucune' dans la limite.\n- Pour créer des paragraphes équilibrés : utilise 'Nombre de mots' (ex: 60–120).\n- Le séparateur accepte \\n pour retour ligne (ex: \\n\\n).",
+  "helpNumberingExamplesTitle": "Exemples de format de numérotation",
+  "helpNumberingExamples": "- 1) \n- 1. \n- [1] \n",
+
+  "historyTitle": "Historique",
+  "historyEmpty": "Aucun historique pour le moment.",
+  "deleteAll": "Tout supprimer",
+  "historyCleared": "Historique supprimé",
+  "entryDeleted": "Entrée supprimée",
+  "undo": "ANNULER",
+  "delete": "Supprimer",
+
+  "historyItemSubtitle": "Le {date} • {count} chars",
+  "@historyItemSubtitle": {
+    "placeholders": {
+      "date": {},
+      "count": {}
+    }
+  },
+
+  "editorTitle": "Éditeur",
+  "settingsTitle": "Paramètres",
+  "presetCitation": "Preset Citation",
+
+  "chunkLimitTitle": "Limite de découpage (paragraphes)",
+  "limitNone": "Aucune (respecter les paragraphes)",
+  "limitWords": "Nombre de mots",
+  "limitChars": "Nombre de caractères",
+
+  "maxWordsLabel": "Max mots par paragraphe (ex: 90)",
+  "maxCharsLabel": "Max caractères par paragraphe (ex: 650)",
+  "chunkTip": "Astuce: active le mode intelligent si les phrases sont très longues.",
+
+  "smartRefactorTitle": "Refactorisation intelligente",
+  "modeLabel": "Mode",
+  "modeSoft": "Doux (style naturel)",
+  "modeStrict": "Strict (plus structuré)",
+  "modeAggressive": "Agressif (coupe davantage)",
+  "smartSplitTitle": "Découper les pensées longues intelligemment",
+  "smartSplitSubtitle": "Phrase → ; : , → mots (fallback)",
+
+  "separatorTitle": "Séparateur de paragraphe / strophe",
+  "separatorHint": "Ex: \\n\\n ou ----",
+  "ensurePunctTitle": "Assurer ponctuation en fin de bloc",
+
+  "strophesTitle": "Strophes & lignes (comme ton exemple)",
+  "outputFormatLabel": "Format final",
+  "formatParagraph": "Paragraphes classiques",
+  "formatStropheLines": "Strophes (lignes)",
+
+  "autoLineWidthTitle": "Auto: largeur de ligne selon la fenêtre",
+  "autoLineWidthSubtitle": "Mesure la zone résultat et ajuste chars/ligne",
+
+  "linesPerStropheLabel": "Lignes / strophe (ex: 4)",
+  "charsPerLineLabel": "Largeur ligne (chars)",
+
+  "longWordsLabel": "Mots très longs",
+  "longWordHyphen": "Mot long: découper avec '-'",
+  "longWordHard": "Mot long: découper sans '-'",
+  "longWordOverflow": "Mot long: ne pas couper (overflow)",
+
+  "preserveHeadersTitle": "Préserver les titres (*...*, §..., dates…)",
+  "smartStrophesTitle": "Strophes intelligentes (fin de phrase)",
+  "smartStrophesSubtitle": "Ferme une strophe sur une phrase complète quand c’est pertinent",
+
+  "numberingTitle": "Numérotation automatique",
+  "numberingFormatLabel": "Format (ex: 1)  |  1.  |  [1] )",
+
+  "shortcutsTitle": "Raccourcis :",
+  "shortcutProcess": "• Ctrl + Entrée : Refactoriser",
+  "shortcutInsertSep": "• Ctrl + Shift + Entrée : Insérer séparateur",
+  "shortcutPreset": "• Ctrl + Alt + B : Preset Citation",
+  "reset": "Réinitialiser",
+
+  "processing": "Traitement...",
+  "refactor": "Refactoriser",
+  "insertSeparator": "Insérer séparateur",
+  "copyResult": "Copier résultat",
+  "copied": "Texte copié !",
+
+  "rawTextTitle": "Texte brut",
+  "generatedTextTitle": "Texte généré",
+  "rawHint": "Colle ton texte ici… (double Entrée = séparateur)",
+  "generatedHint": "Le résultat apparaîtra ici… (modifiable)",
+
+  "stats": "Entrée: {inChars} chars  •  Sortie: {outChars} chars",
+  "@stats": {
+    "placeholders": {
+      "inChars": {},
+      "outChars": {}
+    }
+  }
+}
